@@ -1,0 +1,98 @@
+public abstract class CoreSearch implements Search {
+	
+	protected ControlState control;
+	protected int numState = 0;
+	protected boolean reachGoal = false;
+
+	
+	abstract protected void checkNewState(State dumbState, State currentState);
+	
+	protected void changeStateFromCurrentState(State currentState){
+		
+		int size = currentState.ClearPredicate.size();
+
+		for (int i = 0; i < size; i++) {
+			
+			String upperBlock = new String(currentState.ClearPredicate.get(i));
+			
+			if (upperBlock.equals("0"))
+				continue;
+			
+			for (int j = 0; j < size; j++)
+				
+				if (i!=j) {
+					
+					String lowerBlock = new String(currentState.ClearPredicate.get(j));
+					
+					if (!validMove(currentState, upperBlock, lowerBlock))
+						continue;
+					
+					State dumbState = control.copyState(currentState);
+					
+					String newClearBlock = performMove(dumbState, upperBlock, lowerBlock);
+					
+					checkNewState(dumbState, currentState);
+					if (reachGoal)
+						return;
+					
+					reverseMove(dumbState, upperBlock, lowerBlock, newClearBlock);
+				}
+		} 
+		
+	}
+	
+	protected boolean validMove(State currentState, String upperBlock, String lowerBlock) {
+		
+		if (!lowerBlock.equals("0"))
+			return true;
+		
+		String block = currentState.getOnPredicate(upperBlock);
+		
+		if (block.codePointAt(1) == "0".codePointAt(0))
+			return false;
+		
+		return true;
+	}
+	
+	protected String performMove(State dumbState, String upperBlock, String lowerBlock) {
+		
+		dumbState.addOn(upperBlock + lowerBlock);
+		if (!lowerBlock.equals("0"))
+			dumbState.removeClear(lowerBlock);
+		
+		String newClearBlock = dumbState.removeOn(upperBlock).substring(1);
+		if (!newClearBlock.equals("0"))
+			dumbState.addClear(newClearBlock);
+		
+		return newClearBlock;
+	}
+	
+	protected void reverseMove(State dumbState, String upperBlock, String lowerBlock, String newClearBlock) {
+		
+		dumbState.removeOn(upperBlock);
+		if (!newClearBlock.equals("0"))
+			dumbState.removeClear(newClearBlock);
+		dumbState.addOn(upperBlock + newClearBlock);
+		
+		if (!lowerBlock.equals("0"))
+			dumbState.addClear(lowerBlock);
+		
+	}
+	
+	protected boolean checkGoal(State dumbState,State currentState) {
+		
+		if(control.checkGoal(dumbState)) {
+			
+			System.out.println("GOAL------------");
+			numState++;
+			dumbState.setStateNum(numState);
+			dumbState.setParentStateNum(currentState.getStateNum());
+			
+			control.traceState(dumbState);
+			reachGoal = true;
+			return true;
+		}
+		return false;
+		
+	}
+}
